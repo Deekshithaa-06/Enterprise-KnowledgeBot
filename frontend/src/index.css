@@ -507,13 +507,49 @@ a:hover { text-decoration: underline; }
 
 .msg-body { flex: 1; min-width: 0; }
 
+.msg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
 .msg-label {
   font-size: 0.7rem; font-weight: 700;
   letter-spacing: 0.8px; text-transform: uppercase;
-  margin-bottom: 6px; color: var(--text-muted);
+  color: var(--text-muted);
 }
 
 .msg-label.bot-label { color: var(--acc-purple); }
+
+.copy-response-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.copy-response-btn:hover {
+  border-color: var(--border-acc);
+  color: var(--acc-purple);
+  box-shadow: var(--shadow-xs);
+}
+
+.copy-response-btn:active {
+  transform: translateY(1px);
+}
 
 .msg-text { font-size: 0.9rem; line-height: 1.7; color: var(--text-primary); }
 .msg-text p { margin-bottom: 8px; }
@@ -938,6 +974,7 @@ a:hover { text-decoration: underline; }
   font-weight: 800;
   letter-spacing: -0.5px;
   background: var(--acc-gradient);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

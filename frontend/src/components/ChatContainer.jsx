@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, BarChart2, Quote, FileText, FileSpreadsheet, Presentation, FileType, X, Plus } from 'lucide-react';
+import { Send, Sparkles, BarChart2, Quote, FileText, FileSpreadsheet, Presentation, FileType, X, Plus, Copy, Check } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, LineChart, Line,
   PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
@@ -95,15 +95,56 @@ export default function ChatContainer({ documentCount }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeCitation, setActiveCitation] = useState(null);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState(null);
   const bottomRef = useRef(null);
+  const copyResetRef = useRef(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+
+  useEffect(() => () => {
+    if (copyResetRef.current) clearTimeout(copyResetRef.current);
+  }, []);
 
   const handleNewChat = () => {
     if (loading) return;
     setMessages([]);
     setInput('');
     setActiveCitation(null);
+    setCopiedMessageIndex(null);
+  };
+
+  const copyBotResponse = async (text, index) => {
+    if (!text) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageIndex(index);
+
+      if (copyResetRef.current) clearTimeout(copyResetRef.current);
+      copyResetRef.current = setTimeout(() => {
+        setCopiedMessageIndex(null);
+      }, 1800);
+    } catch {
+      const tempTextarea = document.createElement('textarea');
+      tempTextarea.value = text;
+      tempTextarea.style.position = 'fixed';
+      tempTextarea.style.opacity = '0';
+      document.body.appendChild(tempTextarea);
+      tempTextarea.focus();
+      tempTextarea.select();
+
+      try {
+        document.execCommand('copy');
+        setCopiedMessageIndex(index);
+
+        if (copyResetRef.current) clearTimeout(copyResetRef.current);
+        copyResetRef.current = setTimeout(() => {
+          setCopiedMessageIndex(null);
+        }, 1800);
+      } finally {
+        document.body.removeChild(tempTextarea);
+      }
+    }
   };
 
   const handleSend = async (e) => {
@@ -172,8 +213,21 @@ export default function ChatContainer({ documentCount }) {
                 {msg.role === 'user' ? 'You' : <Sparkles size={14} />}
               </div>
               <div className="msg-body">
-                <div className={`msg-label ${msg.role === 'bot' ? 'bot-label' : ''}`}>
-                  {msg.role === 'user' ? 'You' : 'KnowledgeBot'}
+                <div className="msg-head">
+                  <div className={`msg-label ${msg.role === 'bot' ? 'bot-label' : ''}`}>
+                    {msg.role === 'user' ? 'You' : 'KnowledgeBot'}
+                  </div>
+                  {msg.role === 'bot' && (
+                    <button
+                      type="button"
+                      className="copy-response-btn"
+                      onClick={() => copyBotResponse(msg.text, i)}
+                      aria-label="Copy bot response"
+                    >
+                      {copiedMessageIndex === i ? <Check size={12} /> : <Copy size={12} />}
+                      {copiedMessageIndex === i ? 'Copied' : 'Copy'}
+                    </button>
+                  )}
                 </div>
                 <div className="msg-text">{msg.role === 'user' ? msg.text : renderMarkdown(msg.text)}</div>
                 {msg.role === 'bot' && msg.chart && <InteractiveChart chartConfig={msg.chart} />}
