@@ -109,7 +109,7 @@ export default function ChatContainer({ documentCount }) {
     try {
       const res = await fetch('/api/query', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: q, top_k: 15 }),
+        body: JSON.stringify({ query: q, top_k: 40 }),
       });
       const data = await res.json();
       setMessages(prev => [...prev, res.ok

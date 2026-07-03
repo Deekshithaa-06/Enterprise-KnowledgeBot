@@ -98,6 +98,10 @@ def get_embeddings_batch(texts: List[str]) -> List[Optional[List[float]]]:
                 
             print(f"  Progress: {min(i+batch_size, total)}/{total}")
             
+            # Respect Google Free Tier rate limit (15 Requests Per Minute)
+            import time
+            time.sleep(4.5)
+            
     except Exception as e:
         print(f"  Batch embedding crashed entirely: {e}")
     finally:
@@ -184,22 +188,21 @@ def search_similar_chunks(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
     # Separate chunks that have valid embeddings from those that don't
     embedded_chunks = [c for c in chunks if c.get("embedding") and len(c["embedding"]) > 0]
 
-    client = get_client()
-    if not client:
-        print("Gemini client not configured. Falling back to keyword search.")
-        return keyword_search_fallback(query, chunks, top_k)
+    # Always run a baseline BM25 search across ALL chunks (even ones without embeddings!)
+    bm25_results = keyword_search_fallback(query, chunks, top_k=top_k)
 
-    # If no chunks have embeddings yet, fall back to keyword search over all chunks
-    if not embedded_chunks:
-        print("No embeddings available yet. Falling back to keyword search over all chunks.")
-        return keyword_search_fallback(query, chunks, top_k)
+    client = get_client()
+    if not client or not embedded_chunks:
+        print("Falling back entirely to BM25 keyword search.")
+        return bm25_results
 
     query_emb = get_embedding(query)
     if not query_emb:
-        print("Failed to get query embedding. Falling back to keyword search.")
-        return keyword_search_fallback(query, chunks, top_k)
+        print("Failed to get query embedding. Falling back entirely to BM25.")
+        return bm25_results
 
     # Semantic search using numpy cosine similarity (only on embedded chunks)
+    semantic_results = []
     try:
         chunk_embs = np.array([c["embedding"] for c in embedded_chunks])
         q_emb = np.array(query_emb)
@@ -214,9 +217,27 @@ def search_similar_chunks(query: str, top_k: int = 5) -> List[Dict[str, Any]]:
             embedded_chunks[idx]["similarity_score"] = float(similarity)
 
         embedded_chunks.sort(key=lambda x: x.get("similarity_score", 0), reverse=True)
-        return embedded_chunks[:top_k]
-
+        semantic_results = embedded_chunks[:top_k]
     except Exception as e:
-        print(f"Error during semantic search: {e}. Falling back to keyword search.")
-        return keyword_search_fallback(query, chunks, top_k)
+        print(f"Error during semantic search: {e}. Semantic results skipped.")
+
+    # Hybrid Search: Blend Semantic Results and BM25 Results
+    combined_results = []
+    seen_ids = set()
+    
+    # Interleave results, prioritizing Semantic
+    max_len = max(len(semantic_results), len(bm25_results))
+    for i in range(max_len):
+        if i < len(semantic_results):
+            c = semantic_results[i]
+            if c["id"] not in seen_ids:
+                combined_results.append(c)
+                seen_ids.add(c["id"])
+        if i < len(bm25_results):
+            c = bm25_results[i]
+            if c["id"] not in seen_ids:
+                combined_results.append(c)
+                seen_ids.add(c["id"])
+                
+    return combined_results[:top_k]
 
