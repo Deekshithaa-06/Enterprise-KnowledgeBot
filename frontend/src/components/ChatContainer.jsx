@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, BarChart2, Quote, FileText, FileSpreadsheet, Presentation, FileType } from 'lucide-react';
+import { Send, Sparkles, BarChart2, Quote, FileText, FileSpreadsheet, Presentation, FileType, X, Plus } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, LineChart, Line,
   PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
@@ -99,6 +99,13 @@ export default function ChatContainer({ documentCount }) {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
+  const handleNewChat = () => {
+    if (loading) return;
+    setMessages([]);
+    setInput('');
+    setActiveCitation(null);
+  };
+
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
@@ -123,6 +130,17 @@ export default function ChatContainer({ documentCount }) {
 
   return (
     <div className="chat-pane">
+      <div className="chat-toolbar">
+        <div className="chat-toolbar-copy">
+          
+          <div className="chat-toolbar-subtitle">Start a fresh conversation without reloading the page.</div>
+        </div>
+        <button type="button" className="new-chat-btn" onClick={handleNewChat} disabled={loading && messages.length === 0}>
+          <Plus size={14} />
+          New Chat
+        </button>
+      </div>
+
       <div className="messages-container">
         {messages.length === 0 ? (
           <div className="welcome-state">
@@ -133,8 +151,10 @@ export default function ChatContainer({ documentCount }) {
 
             <h1 className="welcome-heading"><span>What can I help you find?</span></h1>
             <p className="welcome-sub">
-              Upload documents and start asking questions.
-            </p>
+    Upload documents in the Document section and start asking questions.
+        <br />
+  These are the supported formats:
+</p>
 
             <div className="formats-grid">
               {supportedFormats.map(f => (
@@ -185,7 +205,28 @@ export default function ChatContainer({ documentCount }) {
         <div className="citation-drawer">
           <div className="citation-drawer-header">
             <span className="citation-drawer-source">Verified Source</span>
-            <span className="citation-drawer-loc">{activeCitation.doc_name} — {activeCitation.page_or_section}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="citation-drawer-loc">{activeCitation.doc_name} — {activeCitation.page_or_section}</span>
+              <button
+                type="button"
+                aria-label="Close source citation"
+                onClick={() => setActiveCitation(null)}
+                style={{
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-card)',
+                  color: 'var(--text-muted)',
+                  width: 28,
+                  height: 28,
+                  borderRadius: 999,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
           </div>
           <div className="citation-drawer-text">"{activeCitation.excerpt}"</div>
         </div>

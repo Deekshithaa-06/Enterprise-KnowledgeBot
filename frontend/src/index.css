@@ -311,6 +311,64 @@ a:hover { text-decoration: underline; }
   overflow: hidden;
 }
 
+.chat-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 28px 12px;
+  background: linear-gradient(180deg, rgba(161, 0, 255, 0.08) 0%, transparent 100%);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.chat-toolbar-copy {
+  min-width: 0;
+}
+
+.chat-toolbar-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: var(--text-primary);
+}
+
+.chat-toolbar-subtitle {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.new-chat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-acc);
+  background: var(--acc-gradient-soft);
+  color: var(--acc-purple);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.new-chat-btn:hover {
+  background: var(--acc-purple-subtle);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+}
+
+.new-chat-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .messages-container {
   flex: 1; overflow-y: auto;
   display: flex; flex-direction: column; gap: 0;

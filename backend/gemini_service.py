@@ -1,4 +1,5 @@
 from typing import List, Dict, Any, Optional
+import re
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
@@ -23,6 +24,104 @@ class GeminiResponse(BaseModel):
     citations: List[Citation] = Field(description="List of precise citations from the provided context")
     chart: Optional[ChartConfig] = Field(default=None, description="Populate this if the user asks for a chart/graph, or if the question involves quantitative/numeric data comparisons (like trends, rankings, budgets) that can be visualized as a bar chart, line chart, or pie chart.")
 
+
+def _normalize_query(text: str) -> str:
+    """Lowercase and collapse whitespace for lightweight intent checks."""
+    return " ".join(text.lower().strip().split())
+
+
+def _is_greeting_query(text: str) -> bool:
+    """Detect simple greeting/help messages that should get a friendly reply."""
+    normalized = _normalize_query(text)
+    if not normalized:
+        return False
+
+    greeting_phrases = {
+        "hi",
+        "hello",
+        "hey",
+        "hii",
+        "heyy",
+        "good morning",
+        "good afternoon",
+        "good evening",
+        "how are you",
+        "who are you",
+        "help",
+        "help me",
+        "yo",
+    }
+
+    return normalized in greeting_phrases or normalized.startswith("hello ") or normalized.startswith("hi ")
+
+
+def _is_probable_gibberish(text: str) -> bool:
+    """Heuristic detector for low-signal random strings."""
+    normalized = _normalize_query(text)
+    if not normalized:
+        return False
+
+    alpha_tokens = re.findall(r"[a-zA-Z]+", normalized)
+    if not alpha_tokens:
+        # Only punctuation/symbols/numbers usually means no actionable intent.
+        return True
+
+    # Typical short messages with at least one common word are likely meaningful.
+    common_words = {
+        "what", "why", "how", "when", "where", "who", "can", "could", "please", "tell",
+        "show", "find", "document", "documents", "upload", "about", "the", "a", "an", "is", "are",
+        "do", "does", "did", "me", "you", "we", "i", "my", "our", "in", "on", "for", "with"
+    }
+    if any(token in common_words for token in alpha_tokens):
+        return False
+
+    joined_alpha = "".join(alpha_tokens)
+    vowel_count = sum(1 for ch in joined_alpha if ch in "aeiou")
+    vowel_ratio = vowel_count / max(len(joined_alpha), 1)
+
+    # Very consonant-heavy single-token strings like "asdkjfh" are likely gibberish.
+    if len(alpha_tokens) == 1 and len(joined_alpha) >= 5 and vowel_ratio < 0.2:
+        return True
+
+    # Messages with mostly non-letters and very short alpha fragments are likely noise.
+    non_alpha_count = len(re.findall(r"[^a-zA-Z\s]", normalized))
+    if non_alpha_count > len(joined_alpha) and len(joined_alpha) < 6:
+        return True
+
+    return False
+
+
+def _no_documents_response(query: str) -> Dict[str, Any]:
+    """Return a user-friendly reply when no documents are indexed yet."""
+    if _is_greeting_query(query):
+        return {
+            "answer": (
+                "Hi! I can help you explore your uploaded files. "
+                "Please add at least one document in the **Documents** tab, and then ask me a question about it."
+            ),
+            "citations": [],
+            "chart": None,
+        }
+
+    if _is_probable_gibberish(query):
+        return {
+            "answer": (
+                "I could not understand that message yet. "
+                "Please rephrase your question in a clear sentence, and upload a document first if you want document-based answers."
+            ),
+            "citations": [],
+            "chart": None,
+        }
+
+    return {
+        "answer": (
+            "I could not find any indexed documents yet. "
+            "Please upload files in the **Documents** tab, then ask your question again."
+        ),
+        "citations": [],
+        "chart": None,
+    }
+
 def generate_answer_from_context(query: str, retrieved_chunks: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Generate an answer from the retrieved document chunks.
@@ -45,11 +144,7 @@ def generate_answer_from_context(query: str, retrieved_chunks: List[Dict[str, An
 
     if not retrieved_chunks:
         # No context available
-        return {
-            "answer": "I couldn't find any relevant documents in the repository. Please upload documents in the **Documents** tab first, then ask questions about them.",
-            "citations": [],
-            "chart": None
-        }
+        return _no_documents_response(query)
 
     # Construct the context prompt
     context_str = ""
