@@ -225,3 +225,9 @@ def query_knowledge_base(req: QueryRequest):
             } for chunk in retrieved_chunks
         ]
     }
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
+FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+if FRONTEND_DIST.exists():
+    app.mount("/", StaticFiles(directory=FRONTEND_DIST, html=True), name="frontend")
