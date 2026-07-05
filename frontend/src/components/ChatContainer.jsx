@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, BarChart2, Quote, FileText, FileSpreadsheet, Presentation, FileType, X, Plus, Copy, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { Send, Sparkles, BarChart2, Quote, FileText, FileSpreadsheet, Presentation, FileType, X, Copy, Check } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, LineChart, Line,
   PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
@@ -90,7 +90,7 @@ const supportedFormats = [
   { ext: 'TXT',  icon: FileText,        color: '#8E8EA0' },
 ];
 
-export default function ChatContainer({ documentCount }) {
+const ChatContainer = forwardRef(function ChatContainer({ documentCount }, ref) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -112,6 +112,10 @@ export default function ChatContainer({ documentCount }) {
     setActiveCitation(null);
     setCopiedMessageIndex(null);
   };
+
+  useImperativeHandle(ref, () => ({
+    newChat: handleNewChat,
+  }), [loading]);
 
   const copyBotResponse = async (text, index) => {
     if (!text) return;
@@ -171,17 +175,6 @@ export default function ChatContainer({ documentCount }) {
 
   return (
     <div className="chat-pane">
-      <div className="chat-toolbar">
-        <div className="chat-toolbar-copy">
-          
-          <div className="chat-toolbar-subtitle">Start a fresh conversation without reloading the page.</div>
-        </div>
-        <button type="button" className="new-chat-btn" onClick={handleNewChat} disabled={loading && messages.length === 0}>
-          <Plus size={14} />
-          New Chat
-        </button>
-      </div>
-
       <div className="messages-container">
         {messages.length === 0 ? (
           <div className="welcome-state">
@@ -299,4 +292,6 @@ export default function ChatContainer({ documentCount }) {
       </div>
     </div>
   );
-}
+});
+
+export default ChatContainer;

@@ -1,9 +1,11 @@
 import shutil
+import mimetypes
 from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 
 from backend.config import settings
 from backend.database import (
@@ -81,6 +83,28 @@ def remove_document(doc_id: int):
                 print(f"Error deleting file {file_path}: {e}")
                 
     return {"status": "success", "message": "Document deleted successfully."}
+
+@app.get("/api/documents/{doc_id}/open")
+def open_document(doc_id: int):
+    """Return the uploaded file so the frontend can open it in the browser."""
+    docs = get_all_documents()
+    target_doc = next((d for d in docs if d["id"] == doc_id), None)
+
+    if not target_doc:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    file_path = settings.UPLOAD_DIR / target_doc["filename"]
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Uploaded file not found on disk.")
+
+    media_type, _ = mimetypes.guess_type(file_path.name)
+
+    return FileResponse(
+        path=file_path,
+        filename=target_doc["filename"],
+        media_type=media_type or "application/octet-stream",
+        headers={"Content-Disposition": f'inline; filename="{target_doc["filename"]}"'}
+    )
 
 def process_uploaded_document_task(doc_id: int, file_path: Path, file_type: str):
     """Background task to extract text, generate embeddings, and store in database."""

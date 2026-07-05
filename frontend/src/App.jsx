@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { MessageSquare, FolderOpen, AlertCircle, Database, Cpu, Sun, Moon } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { MessageSquare, FolderOpen, AlertCircle, Database, Cpu, Sun, Moon, Plus } from 'lucide-react';
 import ChatContainer from './components/ChatContainer';
 import DocManager from './components/DocManager';
 import SettingsPanel from './components/SettingsPanel';
@@ -9,6 +9,7 @@ export default function App() {
   const [documents, setDocuments] = useState([]);
   const [hasApiKey, setHasApiKey] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const chatActionsRef = useRef(null);
 
   useEffect(() => { fetchDocuments(); checkApiKeyStatus(); }, []);
 
@@ -68,10 +69,20 @@ export default function App() {
         </div>
 
         <nav className="sidebar-nav">
-          <button className={`nav-btn ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>
+          <button className="nav-btn" onClick={() => setActiveTab('chat')}>
             <MessageSquare size={16} /> Ask Bot
           </button>
-          <button className={`nav-btn ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')}>
+          <button
+            type="button"
+            className="nav-btn"
+            onClick={() => {
+              setActiveTab('chat');
+              chatActionsRef.current?.newChat?.();
+            }}
+          >
+            <Plus size={16} /> New Chat
+          </button>
+          <button className="nav-btn" onClick={() => setActiveTab('documents')}>
             <FolderOpen size={16} /> Documents
           </button>
         </nav>
@@ -108,20 +119,8 @@ export default function App() {
       </aside>
 
       <main className="main-panel">
-        <header className="main-header">
-          <span className="header-title">
-            {activeTab === 'chat' && 'AI Knowledge Assistant'}
-            {activeTab === 'documents' && 'Document Repository'}
-          </span>
-          {!hasApiKey && (
-            <div className="api-key-warning" onClick={() => setActiveTab('settings')}>
-              <AlertCircle size={13} /> API Key not configured
-            </div>
-          )}
-        </header>
-
         <div style={{ flex: 1, display: activeTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', overflow: 'hidden' }}>
-          <ChatContainer documentCount={activeDocCount} />
+          <ChatContainer ref={chatActionsRef} documentCount={activeDocCount} />
         </div>
         <div style={{ flex: 1, display: activeTab === 'documents' ? 'flex' : 'none', flexDirection: 'column', overflow: 'hidden' }}>
           <DocManager onDocsUpdated={(d) => setDocuments(d)} />
