@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, BarChart2, Quote, FileText, FileSpreadsheet, Presentation, FileType } from 'lucide-react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { Send, Sparkles, BarChart2, Quote, FileText, FileSpreadsheet, Presentation, FileType, X, Copy, Check } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, LineChart, Line,
   PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid,
@@ -90,14 +90,66 @@ const supportedFormats = [
   { ext: 'TXT',  icon: FileText,        color: '#8E8EA0' },
 ];
 
-export default function ChatContainer({ documentCount }) {
+const ChatContainer = forwardRef(function ChatContainer({ documentCount }, ref) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeCitation, setActiveCitation] = useState(null);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState(null);
   const bottomRef = useRef(null);
+  const copyResetRef = useRef(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+
+  useEffect(() => () => {
+    if (copyResetRef.current) clearTimeout(copyResetRef.current);
+  }, []);
+
+  const handleNewChat = () => {
+    if (loading) return;
+    setMessages([]);
+    setInput('');
+    setActiveCitation(null);
+    setCopiedMessageIndex(null);
+  };
+
+  useImperativeHandle(ref, () => ({
+    newChat: handleNewChat,
+  }), [loading]);
+
+  const copyBotResponse = async (text, index) => {
+    if (!text) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageIndex(index);
+
+      if (copyResetRef.current) clearTimeout(copyResetRef.current);
+      copyResetRef.current = setTimeout(() => {
+        setCopiedMessageIndex(null);
+      }, 1800);
+    } catch {
+      const tempTextarea = document.createElement('textarea');
+      tempTextarea.value = text;
+      tempTextarea.style.position = 'fixed';
+      tempTextarea.style.opacity = '0';
+      document.body.appendChild(tempTextarea);
+      tempTextarea.focus();
+      tempTextarea.select();
+
+      try {
+        document.execCommand('copy');
+        setCopiedMessageIndex(index);
+
+        if (copyResetRef.current) clearTimeout(copyResetRef.current);
+        copyResetRef.current = setTimeout(() => {
+          setCopiedMessageIndex(null);
+        }, 1800);
+      } finally {
+        document.body.removeChild(tempTextarea);
+      }
+    }
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -133,8 +185,10 @@ export default function ChatContainer({ documentCount }) {
 
             <h1 className="welcome-heading"><span>What can I help you find?</span></h1>
             <p className="welcome-sub">
-              Upload documents and start asking questions.
-            </p>
+    Upload documents in the Document section and start asking questions.
+        <br />
+  These are the supported formats:
+</p>
 
             <div className="formats-grid">
               {supportedFormats.map(f => (
@@ -152,8 +206,21 @@ export default function ChatContainer({ documentCount }) {
                 {msg.role === 'user' ? 'You' : <Sparkles size={14} />}
               </div>
               <div className="msg-body">
-                <div className={`msg-label ${msg.role === 'bot' ? 'bot-label' : ''}`}>
-                  {msg.role === 'user' ? 'You' : 'KnowledgeBot'}
+                <div className="msg-head">
+                  <div className={`msg-label ${msg.role === 'bot' ? 'bot-label' : ''}`}>
+                    {msg.role === 'user' ? 'You' : 'KnowledgeBot'}
+                  </div>
+                  {msg.role === 'bot' && (
+                    <button
+                      type="button"
+                      className="copy-response-btn"
+                      onClick={() => copyBotResponse(msg.text, i)}
+                      aria-label="Copy bot response"
+                    >
+                      {copiedMessageIndex === i ? <Check size={12} /> : <Copy size={12} />}
+                      {copiedMessageIndex === i ? 'Copied' : 'Copy'}
+                    </button>
+                  )}
                 </div>
                 <div className="msg-text">{msg.role === 'user' ? msg.text : renderMarkdown(msg.text)}</div>
                 {msg.role === 'bot' && msg.chart && <InteractiveChart chartConfig={msg.chart} />}
@@ -185,7 +252,28 @@ export default function ChatContainer({ documentCount }) {
         <div className="citation-drawer">
           <div className="citation-drawer-header">
             <span className="citation-drawer-source">Verified Source</span>
-            <span className="citation-drawer-loc">{activeCitation.doc_name} — {activeCitation.page_or_section}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="citation-drawer-loc">{activeCitation.doc_name} — {activeCitation.page_or_section}</span>
+              <button
+                type="button"
+                aria-label="Close source citation"
+                onClick={() => setActiveCitation(null)}
+                style={{
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-card)',
+                  color: 'var(--text-muted)',
+                  width: 28,
+                  height: 28,
+                  borderRadius: 999,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
           </div>
           <div className="citation-drawer-text">"{activeCitation.excerpt}"</div>
         </div>
@@ -204,4 +292,6 @@ export default function ChatContainer({ documentCount }) {
       </div>
     </div>
   );
-}
+});
+
+export default ChatContainer;

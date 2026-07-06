@@ -64,6 +64,10 @@ export default function DocManager({ onDocsUpdated }) {
 
   const fmtTime = (iso) => { try { return new Date(iso).toLocaleString(); } catch { return iso; } };
 
+  const openDocument = (docId) => {
+    window.open(`/api/documents/${docId}/open`, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="doc-manager">
       <div>
@@ -117,10 +121,15 @@ export default function DocManager({ onDocsUpdated }) {
               {documents.map(doc => (
                 <tr key={doc.id}>
                   <td>
-                    <div className="doc-filename">
+                    <button
+                      type="button"
+                      className="doc-filename doc-open-btn"
+                      onClick={() => openDocument(doc.id)}
+                      title="Open document"
+                    >
                       <div className="file-icon-wrap"><FileText size={14} color="#A100FF" /></div>
                       <span>{doc.filename}</span>
-                    </div>
+                    </button>
                   </td>
                   <td><code style={{fontFamily:'var(--font-mono)', color:'#A100FF', fontSize:'0.8rem'}}>{doc.file_type.toUpperCase()}</code></td>
                   <td style={{fontSize:'0.8rem'}}>{fmtTime(doc.upload_time)}</td>
