@@ -209,11 +209,14 @@ def open_document(doc_id: int, token: Optional[str] = None, current_user: dict =
             raise HTTPException(status_code=404, detail="File not found on disk")
             
     media_type, _ = mimetypes.guess_type(file_path.name)
+    is_pdf = file_path.suffix.lower() == ".pdf"
+    disposition = "inline" if is_pdf else "attachment"
+    
     return FileResponse(
         path=file_path,
         filename=doc["filename"],
         media_type=media_type or "application/octet-stream",
-        headers={"Content-Disposition": f'inline; filename="{doc["filename"]}"'}
+        headers={"Content-Disposition": f'{disposition}; filename="{doc["filename"]}"'}
     )
 
 # --- CONVERSATION & QUERY ---

@@ -79,7 +79,8 @@ export default function DocManager({ onDocsUpdated }) {
   const fmtTime = (iso) => { try { return new Date(iso).toLocaleString(); } catch { return iso; } };
 
   const openDocument = (docId) => {
-    window.open(`/api/documents/${docId}/open`, '_blank', 'noopener,noreferrer');
+    const token = localStorage.getItem('kb_token');
+    window.open(`/api/documents/${docId}/open?token=${token}`, '_blank', 'noopener,noreferrer');
   };
 
   return (

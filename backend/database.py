@@ -81,6 +81,15 @@ def init_db():
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_docs_user_id ON documents(user_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_messages_conv_id ON messages(conversation_id)")
 
+    # Seed default admin user
+    cursor.execute("SELECT id FROM users WHERE username = 'admin'")
+    if not cursor.fetchone():
+        from backend.auth import get_password_hash
+        hashed = get_password_hash("admin123")
+        created_at = datetime.now().isoformat()
+        cursor.execute("INSERT INTO users (username, hashed_password, role, created_at) VALUES (?, ?, ?, ?)",
+                       ("admin", hashed, "admin", created_at))
+
     conn.commit()
     conn.close()
 
