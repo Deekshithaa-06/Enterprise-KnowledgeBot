@@ -209,11 +209,47 @@ def query_knowledge_base(req: QueryRequest):
     # Synthesize answer using Gemini
     result = generate_answer_from_context(query, retrieved_chunks)
     
+    # Group citations by document name and attach doc_id
+    grouped_citations = {}
+    for cit in result.get("citations", []):
+        doc = cit.get("doc_name", "Unknown Document")
+        page = cit.get("page_or_section", "Unknown Page")
+        excerpt = cit.get("excerpt", "")
+        
+        # Simplify "Page X" to just "X" if possible to make grouped string cleaner
+        clean_page = page.replace("Page ", "").strip()
+        
+        if doc not in grouped_citations:
+            grouped_citations[doc] = {
+                "doc_name": doc,
+                "pages": [clean_page],
+                "excerpts": [excerpt],
+                "doc_id": None
+            }
+        else:
+            if clean_page not in grouped_citations[doc]["pages"]:
+                grouped_citations[doc]["pages"].append(clean_page)
+            grouped_citations[doc]["excerpts"].append(excerpt)
+            
+    final_citations = []
+    for doc, cit in grouped_citations.items():
+        matching = next((c for c in retrieved_chunks if c.get("filename") == doc), None)
+        cit["doc_id"] = matching.get("doc_id") if matching else None
+            
+        pages_str = "Page " + ", ".join(cit["pages"])
+        combined_excerpt = "\n\n...\n\n".join(cit["excerpts"])
+        final_citations.append({
+            "doc_name": cit["doc_name"],
+            "page_or_section": pages_str,
+            "excerpt": combined_excerpt,
+            "doc_id": cit["doc_id"]
+        })
+    
     # Format and return response
     return {
         "query": query,
         "answer": result.get("answer"),
-        "citations": result.get("citations", []),
+        "citations": final_citations,
         "chart": result.get("chart"),
         "retrieved_chunks": [
             {

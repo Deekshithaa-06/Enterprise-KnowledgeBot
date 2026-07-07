@@ -173,6 +173,31 @@ const ChatContainer = forwardRef(function ChatContainer({ documentCount }, ref) 
     } finally { setLoading(false); }
   };
 
+  const openCitationDoc = (citation) => {
+    if (!citation.doc_id) return;
+    
+    // Check if the document is a PDF
+    const isPDF = citation.doc_name && citation.doc_name.toLowerCase().endsWith('.pdf');
+    
+    if (isPDF) {
+      // For PDFs, open in new tab and jump to the exact page
+      const pageMatch = citation.page_or_section?.match(/\d+/);
+      const pageNumber = pageMatch ? pageMatch[0] : 1;
+      window.open(`/api/documents/${citation.doc_id}/open#page=${pageNumber}`, '_blank', 'noopener,noreferrer');
+    } else {
+      // For non-PDFs (Word, PPT, etc), download a text file containing the exact source context
+      const content = `=== SOURCE CITATION ===\n\nDocument: ${citation.doc_name}\nLocation: ${citation.page_or_section}\n\n=== SOURCE TEXT ===\n\n${citation.excerpt}`;
+      
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Citation_${citation.doc_name}_${citation.page_or_section.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  };
+
   return (
     <div className="chat-pane">
       <div className="messages-container">
@@ -228,7 +253,7 @@ const ChatContainer = forwardRef(function ChatContainer({ documentCount }, ref) 
                   <div className="citations-strip">
                     {msg.citations.map((c, ci) => (
                       <button key={ci} className="citation-pill"
-                        onClick={() => setActiveCitation(activeCitation?.excerpt === c.excerpt ? null : c)}>
+                        onClick={() => openCitationDoc(c)}>
                         <Quote size={9} /> {c.doc_name} — {c.page_or_section}
                       </button>
                     ))}
@@ -247,37 +272,6 @@ const ChatContainer = forwardRef(function ChatContainer({ documentCount }, ref) 
         )}
         <div ref={bottomRef} />
       </div>
-
-      {activeCitation && (
-        <div className="citation-drawer">
-          <div className="citation-drawer-header">
-            <span className="citation-drawer-source">Verified Source</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span className="citation-drawer-loc">{activeCitation.doc_name} — {activeCitation.page_or_section}</span>
-              <button
-                type="button"
-                aria-label="Close source citation"
-                onClick={() => setActiveCitation(null)}
-                style={{
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-card)',
-                  color: 'var(--text-muted)',
-                  width: 28,
-                  height: 28,
-                  borderRadius: 999,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer'
-                }}
-              >
-                <X size={14} />
-              </button>
-            </div>
-          </div>
-          <div className="citation-drawer-text">"{activeCitation.excerpt}"</div>
-        </div>
-      )}
 
       <div className="input-bar-wrap">
         <form onSubmit={handleSend} className="input-bar">
