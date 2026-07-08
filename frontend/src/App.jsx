@@ -183,10 +183,10 @@ function MainApp() {
             <span style={{ marginLeft: '6px' }}>Log Out</span>
           </button>
         </div>
-        <div style={{ flex: 1, display: activeTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: activeTab === 'chat' ? 'flex' : 'none', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
           <ChatContainer ref={chatActionsRef} documentCount={activeDocCount} user={user} onConversationUpdated={fetchConversations} />
         </div>
-        <div style={{ flex: 1, display: activeTab === 'documents' ? 'flex' : 'none', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: activeTab === 'documents' ? 'flex' : 'none', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
           <DocManager onDocsUpdated={(d) => setDocuments(d)} />
         </div>
       </main>

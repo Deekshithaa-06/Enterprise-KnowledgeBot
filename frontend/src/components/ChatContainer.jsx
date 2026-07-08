@@ -10,11 +10,24 @@ const renderMarkdown = (text) => {
   if (!text) return null;
   const lines = text.split('\n');
   let inList = false;
+  let inCodeBlock = false;
+  let codeContent = [];
+  let codeLang = '';
   const elements = [];
   let listItems = [];
 
+  const escapeHtml = (unsafe) => {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+  };
+
   const parseInline = (str) => {
-    let p = str.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    let p = escapeHtml(str);
+    p = p.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     p = p.replace(/\*(.*?)\*/g, '<em>$1</em>');
     p = p.replace(/`(.*?)`/g, '<code style="font-family:var(--font-mono);background:var(--acc-purple-subtle);padding:2px 6px;border-radius:4px;font-size:0.88em;color:var(--acc-purple);">$1</code>');
     return <span dangerouslySetInnerHTML={{ __html: p }} />;
@@ -22,19 +35,53 @@ const renderMarkdown = (text) => {
 
   lines.forEach((line, i) => {
     const t = line.trim();
+    
+    if (t.startsWith('```')) {
+      if (inCodeBlock) {
+        inCodeBlock = false;
+        elements.push(
+          <div key={`code-${i}`} style={{ background: 'var(--bg-main)', border: '1px solid var(--border)', padding: '12px', borderRadius: '8px', overflowX: 'auto', marginBottom: '12px' }}>
+            {codeLang && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: 700 }}>{codeLang}</div>}
+            <pre style={{ margin: 0 }}><code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: codeContent.join('\n') }}></code></pre>
+          </div>
+        );
+        codeContent = [];
+        codeLang = '';
+      } else {
+        inCodeBlock = true;
+        codeLang = t.substring(3).trim();
+        if (inList) { elements.push(<ul key={`ul-${i}`}>{listItems}</ul>); listItems = []; inList = false; }
+      }
+      return;
+    }
+
+    if (inCodeBlock) {
+      codeContent.push(escapeHtml(line));
+      return;
+    }
+
     if (t.startsWith('- ') || t.startsWith('* ')) {
       inList = true;
       listItems.push(<li key={`li-${i}`}>{parseInline(t.substring(2))}</li>);
       return;
     }
     if (inList) { elements.push(<ul key={`ul-${i}`}>{listItems}</ul>); listItems = []; inList = false; }
-    if (t.startsWith('### '))      elements.push(<h4 key={i}>{parseInline(t.substring(4))}</h4>);
-    else if (t.startsWith('## '))  elements.push(<h3 key={i}>{parseInline(t.substring(3))}</h3>);
-    else if (t.startsWith('# '))   elements.push(<h2 key={i}>{parseInline(t.substring(2))}</h2>);
-    else if (t)                    elements.push(<p key={i}>{parseInline(t)}</p>);
-    else                           elements.push(<div key={i} style={{ height: 4 }} />);
+    
+    if (t.startsWith('### '))      elements.push(<h4 key={i} style={{marginTop:'12px', marginBottom:'6px'}}>{parseInline(t.substring(4))}</h4>);
+    else if (t.startsWith('## '))  elements.push(<h3 key={i} style={{marginTop:'14px', marginBottom:'8px'}}>{parseInline(t.substring(3))}</h3>);
+    else if (t.startsWith('# '))   elements.push(<h2 key={i} style={{marginTop:'16px', marginBottom:'10px'}}>{parseInline(t.substring(2))}</h2>);
+    else if (t)                    elements.push(<p key={i} style={{marginBottom:'8px', lineHeight:1.5}}>{parseInline(t)}</p>);
+    else                           elements.push(<div key={i} style={{ height: 8 }} />);
   });
+  
   if (inList && listItems.length) elements.push(<ul key="ul-end">{listItems}</ul>);
+  if (inCodeBlock) {
+     elements.push(
+        <div key="code-end" style={{ background: 'var(--bg-main)', border: '1px solid var(--border)', padding: '12px', borderRadius: '8px', overflowX: 'auto', marginBottom: '12px' }}>
+          <pre style={{ margin: 0 }}><code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--text-primary)' }} dangerouslySetInnerHTML={{ __html: codeContent.join('\n') }}></code></pre>
+        </div>
+      );
+  }
   return <div>{elements}</div>;
 };
 

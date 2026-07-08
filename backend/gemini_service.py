@@ -172,7 +172,8 @@ def generate_answer_from_context(query: str, retrieved_chunks: List[Dict[str, An
         "   - Choose 'bar' for categories/rankings.\n"
         "   - Choose 'line' for time-series or trends.\n"
         "   - Choose 'pie' for proportions/shares.\n"
-        "   - Ensure all data points have a text label and numeric value."
+        "   - Ensure all data points have a text label and numeric value.\n"
+        "4. FORMATTING RULE: If your answer includes any code, scripts, CSS, HTML, JSON, or configurations, you MUST wrap them inside triple backticks (```) with the correct language identifier so they render as proper code blocks. Do not output raw code without backticks."
     )
 
     prompt = f"User Query: {query}\n\nRetrieved Context:\n{context_str}"
