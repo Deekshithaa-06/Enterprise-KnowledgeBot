@@ -329,24 +329,6 @@ http://localhost:5173
 
 ---
 
-# 📷 Screenshots
-
-You can add screenshots here.
-
-```
-docs/images/login.png
-c:\Users\kammela.deekshitha\OneDrive - Accenture\Pictures\Screenshots\Screenshot 2026-07-08 005935.png
-
-docs/images/dashboard.png
-c:\Users\kammela.deekshitha\OneDrive - Accenture\Pictures\Screenshots\Screenshot 2026-07-08 010323.png
-
-docs/images/chat.png
-c:\Users\kammela.deekshitha\OneDrive - Accenture\Pictures\Screenshots\Screenshot 2026-07-08 010546.png
-
-docs/images/upload.png
-c:\Users\kammela.deekshitha\OneDrive - Accenture\Pictures\Screenshots\Screenshot 2026-07-08 011027.png
-```
-
 ---
 
 # 👨‍💻 Developed By
