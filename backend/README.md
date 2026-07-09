@@ -83,7 +83,7 @@ Document Processing        Query Processing
 
 ## AI Services
 
-- Google Gemini Pro
+- Google Gemini
 - Gemini Embedding Model
 
 ## Database
@@ -152,9 +152,9 @@ Before running the project, install the following software:
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/KnowledgeBot.git
+git clone https://github.com/Deekshithaa-06/Enterprise-KnowledgeBot.gitEnterprise_Knowledge_Bot
 
-cd KnowledgeBot
+cd Enterprise_Knowledge_Bot
 ```
 
 ---
@@ -208,7 +208,7 @@ GEMINI_API_KEY=YOUR_GEMINI_API_KEY
 ## 4. Start Backend
 
 ```bash
-uvicorn main:app --reload
+uvicorn backend.main:app --reload
 ```
 
 Backend runs on
