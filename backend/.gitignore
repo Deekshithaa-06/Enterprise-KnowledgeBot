@@ -16,8 +16,6 @@ ENV/
 knowledge_bot.db
 knowledge.db
 
-# User Uploads
-uploads/
 
 # IDEs and Editors
 .vscode/
